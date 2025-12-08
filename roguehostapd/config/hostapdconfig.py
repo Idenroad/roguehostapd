@@ -7,7 +7,7 @@ import collections
 import os
 import json
 try:
-    from configparser import SafeConfigParser  # Python 3
+    from configparser import RawConfigParser  # Python 3
 except ImportError:
     from ConfigParser import SafeConfigParser  # Python 2
 
@@ -16,7 +16,7 @@ def get_default_settings():
     """
     Get the project default settings
     """
-    config = SafeConfigParser()
+    config = RawConfigParser()
     config.read(ROGUEHOSTAPD_DEFAULT_CONFIGPATH)
     default_settings = collections.defaultdict()
     for section in config.sections():
