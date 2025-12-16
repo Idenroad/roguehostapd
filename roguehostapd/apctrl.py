@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 """
 This module was made to wrap the hostapd
 """
@@ -171,6 +171,41 @@ class Hostapd(object):
             target=self.hostapd_lib.main, args=(len(hostapd_cmd), hostapd_cmd))
         self.hostapd_thread.start()
 
+    def cleanup_interface(self, interface):
+        """
+        Clean up the wireless interface and restore it to managed mode
+        
+        :param self: A Hostapd object
+        :type self: Hostapd
+        :param interface: The wireless interface name
+        :type interface: str
+        :return: None
+        :rtype: None
+        """
+        import subprocess
+        try:
+            # Kill any remaining hostapd processes
+            subprocess.run(['pkill', '-9', 'hostapd'], 
+                          stderr=subprocess.DEVNULL, check=False)
+            
+            # Remove the interface from monitor mode if it's still in that mode
+            subprocess.run(['ip', 'link', 'set', interface, 'down'],
+                          stderr=subprocess.DEVNULL, check=False)
+            
+            # Set interface back to managed mode
+            subprocess.run(['iw', 'dev', interface, 'set', 'type', 'managed'],
+                          stderr=subprocess.DEVNULL, check=False)
+            
+            # Bring interface back up
+            subprocess.run(['ip', 'link', 'set', interface, 'up'],
+                          stderr=subprocess.DEVNULL, check=False)
+            
+            # Restart NetworkManager to ensure clean state
+            subprocess.run(['systemctl', 'restart', 'NetworkManager'],
+                          stderr=subprocess.DEVNULL, check=False)
+        except Exception as e:
+            print(f"Warning: Could not fully cleanup interface {interface}: {e}")
+
     def stop(self):
         """
         Stop the hostapd
@@ -182,6 +217,11 @@ class Hostapd(object):
         ..note: the stop function uses the eloop_terminate function in hostapd
         shared library to stop AP.
         """
+        # Get the interface name before stopping
+        interface = None
+        if hasattr(self.config_obj, 'configuration_dict'):
+            interface = self.config_obj.configuration_dict.get('interface')
+        
         self.hostapd_lib.eloop_terminate()
         if self.hostapd_thread.is_alive():
             self.hostapd_thread.join(5)
@@ -190,6 +230,10 @@ class Hostapd(object):
             os.remove(ROGUEHOSTAPD_RUNTIME_CONFIGPATH)
         if os.path.isfile(ROGUEHOSTAPD_DENY_MACS_CONFIGPATH):
             os.remove(ROGUEHOSTAPD_DENY_MACS_CONFIGPATH)
+        
+        # Clean up the interface
+        if interface:
+            self.cleanup_interface(interface)
 
 
 if __name__ == '__main__':

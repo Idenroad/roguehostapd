@@ -7,13 +7,30 @@ import sys
 import shutil
 from textwrap import dedent
 import tempfile
-import distutils.sysconfig
-import distutils.ccompiler
+import warnings
+
+# Suppress distutils deprecation warning in Python 3.12+
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='distutils')
+
+try:
+    # Try to use setuptools' vendored distutils first (recommended)
+    from setuptools._distutils import sysconfig, ccompiler
+    from setuptools._distutils.errors import CompileError, LinkError
+except ImportError:
+    # Fallback to standard distutils (deprecated in Python 3.10+, removed in 3.12)
+    try:
+        import distutils.sysconfig as sysconfig
+        import distutils.ccompiler as ccompiler
+        from distutils.errors import CompileError, LinkError
+    except ImportError:
+        raise ImportError(
+            "Cannot import distutils. Please install setuptools: pip install setuptools"
+        )
+
 try:
     from setuptools import Extension
 except ImportError:
     from distutils.core import Extension
-from distutils.errors import CompileError, LinkError
 import roguehostapd.buildutil.build_files as build_files
 import roguehostapd.buildutil.buildexception as buildexception
 
@@ -63,8 +80,8 @@ def check_required_library(libname, libraries=None, include_dir=None):
     file_name = bin_file_name + '.c'
     with open(file_name, 'w') as filep:
         filep.write(LIBNAME_CODE_DICT[libname])
-    compiler = distutils.ccompiler.new_compiler()
-    distutils.sysconfig.customize_compiler(compiler)
+    compiler = ccompiler.new_compiler()
+    sysconfig.customize_compiler(compiler)
     try:
         compiler.link_executable(
             compiler.compile([file_name],

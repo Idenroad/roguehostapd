@@ -6,10 +6,7 @@ import re
 import collections
 import os
 import json
-try:
-    from configparser import RawConfigParser  # Python 3
-except ImportError:
-    from ConfigParser import SafeConfigParser  # Python 2
+from configparser import RawConfigParser
 
 
 def get_default_settings():
@@ -68,6 +65,7 @@ class HostapdConfig(object):
             # the deny mac addresses
             'deny_macs': self.update_black_macs,
             'wpa2password': self.update_security_info,
+            'wpa3password': self.update_wpa3_security_info,
         }
 
     def init_config(self):
@@ -155,6 +153,25 @@ class HostapdConfig(object):
             self.configuration_dict['wpa_pairwise'] = "TKIP CCMP"
             self.configuration_dict['wpa'] = '3'
 
+    def update_wpa3_security_info(self):
+        """
+        Update the WPA3 security configuration if passphrase is specified
+
+        :param self: A HostapdConfig object
+        :type self: HostapdConfig
+        :return: None
+        :rtype: None
+        """
+
+        if 'wpa3password' in self.configuration_dict and self.configuration_dict['wpa3password']:
+            self.configuration_dict['wpa_passphrase'] = self.configuration_dict['wpa3password']
+            self.configuration_dict['wpa_key_mgmt'] = "SAE"
+            self.configuration_dict['wpa_pairwise'] = "CCMP"
+            self.configuration_dict['rsn_pairwise'] = "CCMP"
+            self.configuration_dict['wpa'] = '2'
+            self.configuration_dict['ieee80211w'] = '2'  # PMF required for WPA3
+            self.configuration_dict['sae_require_mfp'] = '1'
+
     def update_configs(self, config_dict):
         """
         Update the attributes based on the configuration dictionary
@@ -167,7 +184,7 @@ class HostapdConfig(object):
         :rtype: None
         """
 
-        for key, value in list(config_dict.items()):
+        for key, value in config_dict.items():
             if (key in self.configuration_dict) and value:
                 self.configuration_dict[key] = value
             elif key not in self.configuration_dict:
@@ -229,6 +246,6 @@ class HostapdConfig(object):
         self.update_options(options)
         self.update_configs(config_dict)
         with open(ROGUEHOSTAPD_RUNTIME_CONFIGPATH, 'w') as conf:
-            for key, value in list(self.configuration_dict.items()):
+            for key, value in self.configuration_dict.items():
                 if value and key not in self.custom_action:
                     conf.write(key + '=' + str(value) + '\n')

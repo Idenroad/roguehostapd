@@ -33,6 +33,9 @@ def parse_args():
         "-pK", "--wpa2password", help="WPA/RSN passhrase")
 
     parser.add_argument(
+        "-pK3", "--wpa3password", help="WPA3-SAE passphrase")
+
+    parser.add_argument(
         "-kA", "--karma_enable", action='store_const', const=1,
         help="Enabling KARMA attack")
 
@@ -69,7 +72,7 @@ def get_configuration_dicts(arg_dict):
     config_obj.init_config()
     hostapd_dict = {}
     options = {}
-    for key, val in list(arg_dict.items()):
+    for key, val in arg_dict.items():
         if key in config_obj.configuration_dict:
             hostapd_dict[key] = val
         elif key in config_obj.options:
@@ -86,6 +89,11 @@ def check_args(args):
             len(args.wpa2password) < 8 or len(args.wpa2password) > 64):
 
         sys.exit('preshared key not valid')
+
+    if args.wpa3password and (
+            len(args.wpa3password) < 8 or len(args.wpa3password) > 64):
+
+        sys.exit('WPA3 passphrase not valid (8-64 chars required)')
 
 
 def run():
