@@ -27,6 +27,8 @@ AUTHOR = 'idenroad (fork), Anakin (original)'
 PYTHON_REQUIRES = '>=3.8'
 
 try:
+    import roguehostapd.buildutil.buildcommon as buildcommon
+    import roguehostapd.buildutil.buildexception as buildexception
     EXT_MODULE = buildcommon.get_extension_module()
     setup(
         name=NAME,
