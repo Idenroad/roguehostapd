@@ -3,10 +3,16 @@ Module for setup hostapd shared library
 """
 
 import shutil
+import os
 from setuptools import setup
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
-from roguehostapd.config.hostapdconfig import WHITE, RED
+
+# Avoid importing the package at setup time (pip builds in isolated env).
+# Define minimal terminal color constants here instead of importing
+# `roguehostapd.config.hostapdconfig` which isn't importable during build.
+WHITE = "\033[0m"
+RED = "\033[31m"
 
 # define project information
 NAME = 'roguehostapd'
@@ -66,4 +72,5 @@ except buildexception.SharedLibMissError as exobj:
            "If you are on Debian-based system: \'apt-get install{}\'.".format(
                "".join(" " + package for package in exobj.packages))))
 finally:
-    shutil.rmtree('tmp')
+    if os.path.isdir('tmp'):
+        shutil.rmtree('tmp')
