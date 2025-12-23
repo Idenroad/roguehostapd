@@ -6,8 +6,6 @@ import shutil
 from setuptools import setup
 from setuptools.command.install import install
 from setuptools.command.build_ext import build_ext
-import roguehostapd.buildutil.buildcommon as buildcommon
-import roguehostapd.buildutil.buildexception as buildexception
 from roguehostapd.config.hostapdconfig import WHITE, RED
 
 # define project information
